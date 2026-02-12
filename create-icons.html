@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZenFocus Icon Generator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 30%, #ddd6fe 60%, #fce7f3 100%);
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #4c1d95;
+            margin-bottom: 30px;
+        }
+        .canvas-container {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        .canvas-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        canvas {
+            border: 2px solid #e0e7ff;
+            border-radius: 10px;
+            background: white;
+        }
+        button {
+            background: linear-gradient(135deg, #a78bfa 0%, #c4b5fd 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(167, 139, 250, 0.4);
+        }
+        .info {
+            color: #6b21a8;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧘 ZenFocus Icon Generator</h1>
+        <p style="color: #6b21a8; margin-bottom: 20px;">Chrome Web Store standartlarına uygun ikonlar</p>
+        
+        <div class="canvas-container">
+            <div class="canvas-wrapper">
+                <canvas id="icon16" width="16" height="16"></canvas>
+                <span style="color: #6b21a8; font-size: 12px;">16x16</span>
+            </div>
+            <div class="canvas-wrapper">
+                <canvas id="icon48" width="48" height="48"></canvas>
+                <span style="color: #6b21a8; font-size: 12px;">48x48</span>
+            </div>
+            <div class="canvas-wrapper">
+                <canvas id="icon128" width="128" height="128"></canvas>
+                <span style="color: #6b21a8; font-size: 12px;">128x128 (96x96 + 16px padding)</span>
+            </div>
+        </div>
+
+        <button onclick="downloadIcon('icon16', 'icon16.png')">İndir 16x16</button>
+        <button onclick="downloadIcon('icon48', 'icon48.png')">İndir 48x48</button>
+        <button onclick="downloadIcon('icon128', 'icon128.png')">İndir 128x128</button>
+        <button onclick="downloadAll()">Hepsini İndir</button>
+
+        <div class="info">
+            ✅ 128x128: 96x96 gerçek ikon + 16px şeffaf padding<br>
+            ✅ PNG formatında<br>
+            ✅ Açık ve koyu arka planda çalışır<br>
+            ✅ Modern pastel tasarım
+        </div>
+    </div>
+
+    <script>
+        function drawIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            const scale = size / 128;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, size, size);
+            
+            // Calculate actual icon size (96x96 for 128x128, scaled for others)
+            const iconSize = size === 128 ? 96 : size;
+            const padding = size === 128 ? 16 : 0;
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const radius = iconSize / 2;
+            
+            // Gradient background circle
+            const gradient = ctx.createLinearGradient(
+                centerX - radius, centerY - radius,
+                centerX + radius, centerY + radius
+            );
+            gradient.addColorStop(0, '#a78bfa');
+            gradient.addColorStop(0.5, '#c4b5fd');
+            gradient.addColorStop(1, '#ddd6fe');
+            
+            // Draw main circle with shadow
+            ctx.shadowColor = 'rgba(167, 139, 250, 0.4)';
+            ctx.shadowBlur = size * 0.1;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = size * 0.02;
+            
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius * 0.9, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // Reset shadow
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            
+            // Inner glow circle
+            const innerGradient = ctx.createRadialGradient(
+                centerX, centerY, 0,
+                centerX, centerY, radius * 0.9
+            );
+            innerGradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+            innerGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.1)');
+            innerGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius * 0.9, 0, Math.PI * 2);
+            ctx.fillStyle = innerGradient;
+            ctx.fill();
+            
+            // Draw "Z" letter
+            ctx.fillStyle = 'white';
+            ctx.font = `bold ${radius * 1.2}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Add text shadow for depth
+            ctx.shadowColor = 'rgba(76, 29, 149, 0.3)';
+            ctx.shadowBlur = size * 0.05;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = size * 0.01;
+            
+            ctx.fillText('Z', centerX, centerY);
+            
+            // Reset shadow
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            
+            // Subtle highlight on top
+            const highlightGradient = ctx.createLinearGradient(
+                centerX, centerY - radius * 0.9,
+                centerX, centerY - radius * 0.3
+            );
+            highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+            highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius * 0.9, 0, Math.PI * 2);
+            ctx.fillStyle = highlightGradient;
+            ctx.fill();
+        }
+
+        function downloadIcon(canvasId, filename) {
+            const canvas = document.getElementById(canvasId);
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function downloadAll() {
+            setTimeout(() => downloadIcon('icon16', 'icon16.png'), 100);
+            setTimeout(() => downloadIcon('icon48', 'icon48.png'), 300);
+            setTimeout(() => downloadIcon('icon128', 'icon128.png'), 500);
+        }
+
+        // Draw icons on page load
+        window.onload = function() {
+            drawIcon(document.getElementById('icon16'), 16);
+            drawIcon(document.getElementById('icon48'), 48);
+            drawIcon(document.getElementById('icon128'), 128);
+        };
+    </script>
+</body>
+</html>

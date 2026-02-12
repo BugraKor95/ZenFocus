@@ -1,0 +1,1 @@
+chrome.runtime.onInstalled.addListener(()=>{console.log("ZenFocus extension installed"),chrome.storage.local.get(["blockedSites","focusMode"],e=>{e.blockedSites||chrome.storage.local.set({blockedSites:[]}),e.focusMode===void 0&&chrome.storage.local.set({focusMode:!1})})});
