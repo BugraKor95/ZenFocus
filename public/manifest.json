@@ -1,12 +1,11 @@
 {
   "manifest_version": 3,
   "name": "ZenFocus",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Block distracting websites and stay focused",
   "permissions": [
     "storage",
-    "tabs",
-    "activeTab"
+    "declarativeNetRequest"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -33,5 +32,11 @@
   ],
   "background": {
     "service_worker": "background.js"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["blocked.html"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }
