@@ -2,6 +2,8 @@
 
 ## Next release
 
+- **Safer password lock:** Your password is no longer stored on disk; only a scrambled fingerprint (hash) is kept. If you already set a password, it is converted automatically the next time you open the extension. Nothing changes in how you use it.
+
 - Planned:
   - Password stored more securely
   - Fewer permissions requested
