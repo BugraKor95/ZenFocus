@@ -27,7 +27,8 @@
 
 - [x] Untrack `node_modules` and `dist` (G1)
 - [x] Store the password as a salted hash using Web Crypto (G2): PBKDF2-SHA-256, 150k iterations, plain-text values migrated on load
-- [ ] Minimal permissions: drop the content script or narrow its match patterns (G3)
+- [x] Minimal permissions (G3): no `host_permissions` and no static content script; access to a site is requested (`optional_host_permissions`) only when the user blocks it, and the content script is registered only for those sites. Blocking-rule generation moved to a tested module (`src/lib/sites.js`).
+  - [ ] Follow-up: verify in real Chrome (permission prompt, upgrade path from 1.1.0) before release
 - [ ] Use a single version number; the build script copies it into the manifest (G4)
 - [ ] Add ESLint and Vitest; unit tests for the blocking-rule generation logic (G5)
 

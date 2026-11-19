@@ -1,6 +1,7 @@
-if (window.location.protocol === 'chrome-extension:') {
-  // Do not run on extension pages (e.g., blocked.html)
+if (window.location.protocol === 'chrome-extension:' || window.__zenFocusLoaded) {
+  // Do not run on extension pages (e.g., blocked.html), and never inject twice into the same tab
 } else {
+  window.__zenFocusLoaded = true;
   function isSiteBlocked(blockedSites, hostname) {
     return blockedSites.some((site) => {
       const cleanSite = site.replace(/^(https?:\/\/)?(www\.)?/, '').toLowerCase();
