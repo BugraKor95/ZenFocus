@@ -4,9 +4,9 @@
 
 - **Safer password lock:** Your password is no longer stored on disk; only a scrambled fingerprint (hash) is kept. If you already set a password, it is converted automatically the next time you open the extension. Nothing changes in how you use it.
 
+- **Fewer permissions:** ZenFocus no longer asks to read and change data on every website. Chrome now asks for access to a site only when you add it to your block list. If you already have sites in your list, the popup shows a "Grant access" button once.
+
 - Planned:
-  - Password stored more securely
-  - Fewer permissions requested
   - Turkish and English language support
   - Release on the Chrome Web Store
 

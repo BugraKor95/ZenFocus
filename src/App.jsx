@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { normalizeSite, originPattern, originPatterns } from './lib/sites.js';
 import { hashPassword, migratePassword, verifyPassword } from './lib/password.js';
 
 const DEFAULT_SETTINGS = {
@@ -28,6 +29,8 @@ function App() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [blockedSites, setBlockedSites] = useState([]);
   const [newSite, setNewSite] = useState('');
+  const [siteError, setSiteError] = useState('');
+  const [missingAccess, setMissingAccess] = useState([]);
   const [focusMode, setFocusMode] = useState(false);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [stats, setStats] = useState({ totalBlocked: 0, focusTime: 0, sessionsCompleted: 0 });
@@ -150,18 +153,47 @@ function App() {
   const addSite = () => {
     if (newSite.trim() === '') return;
 
-    const cleanSite = newSite.trim().toLowerCase().replace(/^(https?:\/\/)?(www\.)?/, '');
-    
+    const cleanSite = normalizeSite(newSite);
+    const origin = originPattern(cleanSite);
+    if (!origin) {
+      setSiteError('Enter a valid site, e.g. instagram.com');
+      return;
+    }
+    setSiteError('');
+
     if (blockedSites.includes(cleanSite)) {
       setNewSite('');
       return;
     }
 
-    const updatedSites = [...blockedSites, cleanSite];
-    setBlockedSites(updatedSites);
-    
-    chrome.storage.local.set({ blockedSites: updatedSites }, () => {
-      setNewSite('');
+    // ZenFocus only asks for access to the sites you block (must be called from the click).
+    chrome.permissions.request({ origins: [origin] }, (granted) => {
+      if (!granted) {
+        setSiteError('Access to this site is needed to block it.');
+        return;
+      }
+      const updatedSites = [...blockedSites, cleanSite];
+      setBlockedSites(updatedSites);
+      chrome.storage.local.set({ blockedSites: updatedSites }, () => {
+        setNewSite('');
+      });
+    });
+  };
+
+  // Sites saved by an earlier version may lack access; offer to grant it in one click.
+  useEffect(() => {
+    let current = true;
+    const patterns = originPatterns(blockedSites);
+    Promise.all(patterns.map((origin) => chrome.permissions.contains({ origins: [origin] })))
+      .then((results) => {
+        if (current) setMissingAccess(patterns.filter((_, i) => !results[i]));
+      });
+    return () => { current = false; };
+  }, [blockedSites]);
+
+  const grantAccess = () => {
+    chrome.permissions.request({ origins: missingAccess }, (granted) => {
+      if (granted) setMissingAccess([]);
     });
   };
 
@@ -476,7 +508,7 @@ function App() {
             <input
               type="text"
               value={newSite}
-              onChange={(e) => setNewSite(e.target.value)}
+              onChange={(e) => { setNewSite(e.target.value); setSiteError(''); }}
               onKeyPress={handleKeyPress}
               placeholder="instagram.com"
               className="flex-1 px-4 py-3 bg-white border border-indigo-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent transition"
@@ -488,7 +520,22 @@ function App() {
               +
             </button>
           </div>
+          {siteError && <p className="text-xs text-rose-600 mt-2" role="alert">{siteError}</p>}
         </div>
+
+        {missingAccess.length > 0 && (
+          <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 mb-4">
+            <p className="text-xs text-amber-800 mb-2">
+              ZenFocus now asks for access only to the sites you block. {missingAccess.length} site(s) need access to be blocked.
+            </p>
+            <button
+              onClick={grantAccess}
+              className="px-4 py-2 bg-amber-200 text-amber-900 rounded-xl text-xs font-semibold hover:bg-amber-300 transition"
+            >
+              Grant access
+            </button>
+          </div>
+        )}
 
         <div className="bg-white/50 rounded-2xl p-5 border border-indigo-100">
           <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center justify-between">
