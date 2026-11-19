@@ -26,7 +26,7 @@
 ### Sprint 1 — Cleanup and security (1 week)
 
 - [x] Untrack `node_modules` and `dist` (G1)
-- [ ] Store the password as a salted SHA-256 hash using Web Crypto (G2)
+- [x] Store the password as a salted hash using Web Crypto (G2): PBKDF2-SHA-256, 150k iterations, plain-text values migrated on load
 - [ ] Minimal permissions: drop the content script or narrow its match patterns (G3)
 - [ ] Use a single version number; the build script copies it into the manifest (G4)
 - [ ] Add ESLint and Vitest; unit tests for the blocking-rule generation logic (G5)

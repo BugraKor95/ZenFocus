@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { hashPassword, migratePassword, verifyPassword } from './lib/password.js';
 
 const DEFAULT_SETTINGS = {
   mainText: 'Time to focus.',
@@ -31,7 +32,8 @@ function App() {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [stats, setStats] = useState({ totalBlocked: 0, focusTime: 0, sessionsCompleted: 0 });
   const [password, setPassword] = useState('');
-  const [savedPassword, setSavedPassword] = useState('');
+  const [savedPassword, setSavedPassword] = useState(null);
+  const [inputValid, setInputValid] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
   const [pomodoroTime, setPomodoroTime] = useState(25 * 60);
   const [pomodoroRunning, setPomodoroRunning] = useState(false);
@@ -39,12 +41,19 @@ function App() {
   const timerRef = useRef(null);
 
   useEffect(() => {
-    chrome.storage.local.get(['blockedSites', 'focusMode', 'blockPageSettings', 'stats', 'password'], (result) => {
+    chrome.storage.local.get(['blockedSites', 'focusMode', 'blockPageSettings', 'stats', 'password', 'passwordHash'], (result) => {
       if (result.blockedSites) setBlockedSites(result.blockedSites);
       if (result.focusMode !== undefined) setFocusMode(result.focusMode);
       if (result.blockPageSettings) setSettings({ ...DEFAULT_SETTINGS, ...result.blockPageSettings });
       if (result.stats) setStats(result.stats);
-      if (result.password) setSavedPassword(result.password);
+      // Older versions stored the password itself; replace it with a hash
+      migratePassword(result.passwordHash || result.password).then((record) => {
+        setSavedPassword(record);
+        if (typeof result.password === 'string') {
+          if (record) chrome.storage.local.set({ passwordHash: record });
+          chrome.storage.local.remove('password');
+        }
+      });
     });
   }, []);
 
@@ -95,8 +104,16 @@ function App() {
     }
   };
 
-  const confirmTurnOff = () => {
-    if (savedPassword && passwordInput !== savedPassword) {
+  useEffect(() => {
+    let current = true;
+    verifyPassword(passwordInput, savedPassword).then((ok) => { if (current) setInputValid(ok); });
+    return () => { current = false; };
+  }, [passwordInput, savedPassword]);
+
+  const passwordBlocks = Boolean(savedPassword) && !inputValid;
+
+  const confirmTurnOff = async () => {
+    if (savedPassword && !(await verifyPassword(passwordInput, savedPassword))) {
       return;
     }
     setFocusMode(false);
@@ -105,10 +122,17 @@ function App() {
     setPasswordInput('');
   };
 
-  const savePassword = (newPassword) => {
-    setSavedPassword(newPassword);
-    chrome.storage.local.set({ password: newPassword });
+  const savePassword = async (newPassword) => {
     setPassword('');
+    if (!newPassword) {
+      setSavedPassword(null);
+      chrome.storage.local.remove(['passwordHash', 'password']);
+      return;
+    }
+    const record = await hashPassword(newPassword);
+    setSavedPassword(record);
+    chrome.storage.local.set({ passwordHash: record });
+    chrome.storage.local.remove('password');
   };
 
   const updateSetting = (key, value) => {
@@ -532,7 +556,7 @@ function App() {
                   placeholder="Enter password to confirm..."
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 transition"
                 />
-                {passwordInput && passwordInput !== savedPassword && (
+                {passwordInput && !inputValid && (
                   <p className="text-xs text-rose-500 mt-2">Incorrect password</p>
                 )}
               </div>
@@ -546,9 +570,9 @@ function App() {
               </button>
               <button
                 onClick={confirmTurnOff}
-                disabled={savedPassword && passwordInput !== savedPassword}
+                disabled={passwordBlocks}
                 className={`flex-1 py-2.5 rounded-xl font-semibold transition-all shadow-md ${
-                  savedPassword && passwordInput !== savedPassword
+                  passwordBlocks
                     ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
                     : 'bg-gradient-to-r from-rose-500 to-red-500 text-white hover:from-rose-600 hover:to-red-600 shadow-rose-200/50'
                 }`}
